@@ -18,7 +18,7 @@ class ReviewController extends Controller
     public function index()
     {
         $reviews = Review::all();
-        return view('admin.review.index',compact('reviews'));
+        return view('admin.review.index', compact('reviews'));
     }
 
     /**
@@ -37,13 +37,14 @@ class ReviewController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
+
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|min:4',
             'job' => 'required',
             'description' => 'required|min:10|max:255',
-            'image' => 'image|mimes:jpeg,png,jpg|max:2048'
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
         $review = new Review();
@@ -51,13 +52,14 @@ class ReviewController extends Controller
         $review->job = $validated['job'];
         $review->description = $validated['description'];
 
-        if($request->hasfile('image')){
-            $get_file = $request->file('image')->store('images/reviewers');
+        if ($request->hasFile('image')) {
+            $get_file = $request->file('image')->store('images/reviewers', 'public');
             $review->image = $get_file;
         }
 
         $review->save();
-        return to_route('admin.review.index')->with('message','Review Added');
+
+        return to_route('admin.review.index')->with('message', 'Review Added');
     }
 
     /**
@@ -77,29 +79,32 @@ class ReviewController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
+
     public function update(Request $request, Review $review)
     {
         $validated = $request->validate([
             'name' => 'required|min:4',
             'job' => 'required',
             'description' => 'required|min:10|max:255',
-            'image' => 'image|mimes:jpeg,png,jpg|max:2048'
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
         $review->name = $validated['name'];
         $review->job = $validated['job'];
         $review->description = $validated['description'];
 
-        if($request->hasfile('image')){
-            if($review->image != null ){
-            Storage::delete($review->image);
+        if ($request->hasFile('image')) {
+            if ($review->image && Storage::disk('public')->exists($review->image)) {
+                Storage::disk('public')->delete($review->image);
             }
-            $get_new_file = $request->file('image')->store('images/reviewers');
+
+            $get_new_file = $request->file('image')->store('images/reviewers', 'public');
             $review->image = $get_new_file;
         }
 
-        $review->update();
-        return to_route('admin.review.index')->with('message','Review Updated');
+        $review->save(); 
+
+        return to_route('admin.review.index')->with('message', 'Review Updated');
     }
 
     /**
@@ -122,10 +127,10 @@ class ReviewController extends Controller
      */
     public function destroy(Review $review)
     {
-        if($review->image != null){
+        if ($review->image != null) {
             Storage::delete($review->image);
         }
-        $review -> delete();
+        $review->delete();
         return back()->with('message', 'Review Deleted');
     }
 }

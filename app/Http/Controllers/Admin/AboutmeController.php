@@ -13,47 +13,48 @@ class AboutmeController extends Controller
     public function index()
     {
         $user = User::select(
-         'id',
-         'name',
-         'email',
-         'phone',
-         'address',
-         'job',
-         'degree',
-         'birth_day',
-         'profile_pic',
-         'experience')->where('id',1)->first();
+            'id',
+            'name',
+            'email',
+            'phone',
+            'address',
+            'job',
+            'degree',
+            'birth_day',
+            'profile_pic',
+            'experience'
+        )->where('id', 1)->first();
         //     dd($user);
         // $user = User::first();
         return view('admin.aboutme.index', compact('user'));
     }
 
-    public function update(Request $request,User $user){
-      //  $validated = $request->validate(['name'=> ['required','min:3']]);
-      $user = User::first();
-      $validated = $request->validate([
-        'name' => 'required|min:3',
-        'email' => 'required|email',
-        'phone' => 'required',
-        'address' => 'required',
-        'degree' => 'required',
-        'experience' => 'required',
-        'birth_day' => 'required|date',
-        'job' => 'required',
-        'image' => 'image|mimes:jpeg,png,jpg|max:2048',
-    ]);
 
-    if($request->hasfile('image')){
-        if($user->profile_pic != null){
-            Storage::delete($user->profile_pic);
+    public function update(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'name' => 'required|min:3',
+            'email' => 'required|email',
+            'phone' => 'required',
+            'address' => 'required',
+            'degree' => 'required',
+            'experience' => 'required',
+            'birth_day' => 'required|date',
+            'job' => 'required',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        if ($request->hasFile('image')) {
+            if ($user->profile_pic && Storage::disk('public')->exists($user->profile_pic)) {
+                Storage::disk('public')->delete($user->profile_pic);
+            }
+
+            $newImage = $request->file('image')->store('images', 'public');
+            $validated['profile_pic'] = $newImage;
         }
-        $get_new_file = $request->file('image')->store('images');
-        $user->profile_pic = $get_new_file;
-    }
 
-    $user->update($validated);
+        $user->update($validated);
 
-    return to_route('admin.aboutme.index')->with('message','Data Updated');
+        return to_route('admin.aboutme.index')->with('message', 'Data Updated');
     }
 }
-
